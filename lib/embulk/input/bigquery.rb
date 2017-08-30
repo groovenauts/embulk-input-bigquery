@@ -55,15 +55,23 @@ module Embulk
 
         @task[:columns] = values_to_sym(@task[:columns], 'name')
 
-        rows.each do |row|
-          columns = []
-          @task[:columns].each do |c|
-            val = row[c['name'].to_sym]
-            val = eval(c['eval'], binding) if c['eval']
-            columns << val
+        loop do
+          rows.each do |row|
+            columns = []
+            @task[:columns].each do |c|
+              val = row[c['name'].to_sym]
+              val = eval(c['eval'], binding) if c['eval']
+              columns << val
+            end
+
+            @page_builder.add(columns)
           end
 
-          @page_builder.add(columns)
+          if rows.next?
+            rows = rows.next
+          else
+            break
+          end
         end
         @page_builder.finish
         {}
